@@ -1,7 +1,7 @@
 # Technical Notes
 
-Six design decisions behind the implementation, what was cut, how to exercise
-the interesting flows, AI usage, and what I'd do next.
+Six design decisions behind the implementation, how to exercise
+the interesting flows, AI usage, Known limitations and Future improvements.
 
 ---
 
@@ -61,22 +61,6 @@ One `Campaign` row, two Pydantic response schemas: `CampaignAdmin` (id,
 version, status, token, allowed_actions, enrollment_count, etc.) and
 `CampaignPublic` (name, description, offers only). Each admin/public router
 serializes these schemas respectively.
----
-
-## What I cut (and why)
-
-- **Auth / multi-tenancy** — explicitly out of spec.
-- **Auto-transitions (scheduler)** — out of spec and removed. Status changes
-  are manual-only; a live campaign whose window has passed stays live until
-  explicitly ended.
-- **Coupon / code generation** — out of spec.
-- **E.164 phone validation** — out of spec; length-sanity only.
-- **SKU catalog validation** — out of spec; free-text `applies_to`.
-- **Timezone rendering** — all datetimes are UTC throughout; no TZ conversion.
-- **Pagination / filtering** — not needed at demo scale.
-- **Styling framework** — single `index.css`; not worth the setup time.
-- **Editing non-draft campaigns** — per spec; the server enforces it, the UI
-  reflects it.
 
 ---
 
@@ -102,16 +86,14 @@ serializes these schemas respectively.
 ## AI usage
 
 My background is backend-heavy, so I used Claude to generate all frontend
-code (React components, routing, API client, CSS). I drove it with explicit
-requirements — schema shapes, error codes, UX states — reviewed every file it
-produced, and adjusted where output diverged from intent (e.g. version-conflict
-state wiring, offer field coercion before submit). I own the decisions; the AI
-accelerated the React surface I'd otherwise have spent more time on.
+code (React components, routing, API client, etc.). I drove it with explicit
+requirements, schema shapes, error codes, UX states, reviewed every file it
+produced, and adjusted where output diverged from intent. I own the decisions;
+the AI accelerated the React surface I'd otherwise have spent more time on.
+The Backend code (FastAPI routers, lifecycle engine, Pydantic schemas, Alembic
+migration, identity normalisation) was written by hand and with some claude
+code help
 
-Backend code (FastAPI routers, lifecycle engine, Pydantic schemas, Alembic
-migration, identity normalisation) was written by hand. I used Claude as a
-sounding board for a few edge cases (concurrent enroll dedup, optimistic lock
-pattern) but the code is mine.
 
 ---
 
