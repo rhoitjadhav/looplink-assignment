@@ -50,8 +50,6 @@ class Campaign(Base):
     )
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="campaign")
 
-
-
     @classmethod
     def create(cls, offers=None, **kwargs):
         kwargs.pop("offers", None)
@@ -113,3 +111,12 @@ class Campaign(Base):
             campaign.version += 1
             session.commit()
             return campaign_id
+
+    @classmethod
+    def get_by_token(cls, token):
+        with SessionLocal() as session:
+            return session.scalars(
+                select(cls)
+                .options(selectinload(cls.offers))
+                .where(cls.public_token == token)
+            ).first()

@@ -4,6 +4,8 @@ from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint, fun
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from sqlalchemy.dialects.postgresql import insert
+
 from ..database import Base, SessionLocal
 from .campaign import Campaign
 
@@ -41,4 +43,23 @@ class Enrollment(Base):
             return session.scalar(
                 select(func.count(cls.id)).where(cls.campaign_id == campaign_id)
             ) or 0
+
+    @classmethod
+    def enroll(cls, campaign_id, identity_type, identity_raw, identity_normalized) -> bool:
+        """Returns True if already enrolled, False if newly enrolled."""
+        with SessionLocal() as session:
+            stmt = (
+                insert(cls)
+                .values(
+                    campaign_id=campaign_id,
+                    identity_type=identity_type,
+                    identity_raw=identity_raw,
+                    identity_normalized=identity_normalized,
+                )
+                .on_conflict_do_nothing(constraint="uq_enrollment_identity")
+                .returning(cls.id)
+            )
+            inserted = session.execute(stmt).first()
+            session.commit()
+            return inserted is None
     

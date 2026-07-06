@@ -4,7 +4,11 @@ from fastapi import HTTPException
 
 from ..lifecycle import TransitionError, allowed_actions, apply_transition, launch_problems
 from ..models import Campaign, Enrollment, Offer
-from ..schemas import CampaignAdmin, CampaignUpdate, CampaignWrite, TransitionRequest
+from ..normalize import InvalidIdentity, normalize_identity
+from ..schemas import (
+    CampaignAdmin, CampaignPublic, CampaignUpdate, CampaignWrite,
+    EnrollRequest, EnrollResponse, OfferPublic, PublicCampaignResponse, TransitionRequest,
+)
 
 
 def conflict(code: str, message: str) -> HTTPException:
@@ -14,6 +18,22 @@ def conflict(code: str, message: str) -> HTTPException:
 class CampaignService:
     def __int__(self, campaign_model: Campaign):
         self.campaign_model = campaign_model
+
+    @staticmethod
+    def _public_shape(campaign: Campaign) -> CampaignPublic:
+        return CampaignPublic(
+            name=campaign.name,
+            description=campaign.description,
+            offers=[OfferPublic(type=o.type, params=o.params) for o in campaign.offers],
+        )
+
+    @staticmethod
+    def _public_state(campaign: Campaign) -> str:
+        if campaign.status == "live":
+            return "live"
+        if campaign.status == "ended":
+            return "ended"
+        return "not_open"
 
     @staticmethod
     def serialize(campaign: Campaign) -> CampaignAdmin:
@@ -34,7 +54,9 @@ class CampaignService:
 
     def create_campaign(self, campaign_data: CampaignWrite) -> CampaignAdmin:
         offers = self._build_offers(campaign_data.offers)
-        campaign = Campaign.create(**campaign_data.model_dump(exclude={"offers"}), offers=offers)
+        campaign = Campaign.create(
+            **campaign_data.model_dump(exclude={"offers"}), offers=offers
+        )
         return self.serialize(Campaign.get_by_pk(campaign.id))
 
     def list_campaigns(self):
@@ -78,3 +100,36 @@ class CampaignService:
 
         Campaign.set_status(campaign_id, campaign.status)
         return self.serialize(Campaign.get_by_pk(campaign_id))
+
+    def view_campaign(self, token: str) -> PublicCampaignResponse:
+        campaign = Campaign.get_by_token(token)
+        if not campaign:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "This link isn't valid."})
+        state = self._public_state(campaign)
+        return PublicCampaignResponse(
+            state=state,
+            campaign=self._public_shape(campaign) if state == "live" else None,
+        )
+
+    def enroll_campaign(self, token: str, body: EnrollRequest) -> EnrollResponse:
+        campaign = Campaign.get_by_token(token)
+        if not campaign:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "This link isn't valid."})
+        if campaign.status != "live":
+            raise HTTPException(status_code=409, detail={"code": "not_live", "message": "This campaign isn't open for enrollment."})
+        try:
+            identity_type, normalized = normalize_identity(body.identity)
+        except InvalidIdentity as exc:
+            raise HTTPException(status_code=422, detail={"code": "invalid_identity", "message": str(exc)})
+
+        already_enrolled = Enrollment.enroll(
+            campaign_id=campaign.id,
+            identity_type=identity_type,
+            identity_raw=body.identity.strip(),
+            identity_normalized=normalized,
+        )
+        return EnrollResponse(
+            already_enrolled=already_enrolled,
+            identity_type=identity_type,
+            campaign=self._public_shape(campaign),
+        )
