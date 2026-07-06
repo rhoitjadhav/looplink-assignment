@@ -2,9 +2,9 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from ..lifecycle import TransitionError, allowed_actions, apply_transition, launch_problems
+from .lifecycle import TransitionError, allowed_actions, apply_transition, launch_problems
 from ..models import Campaign, Enrollment, Offer
-from ..normalize import InvalidIdentity, normalize_identity
+from ..common.helper import InvalidIdentity, normalize_identity
 from ..schemas import (
     CampaignAdmin, CampaignPublic, CampaignUpdate, CampaignWrite,
     EnrollRequest, EnrollResponse, OfferPublic, PublicCampaignResponse, TransitionRequest,

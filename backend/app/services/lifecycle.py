@@ -6,7 +6,7 @@ buttons purely from that list, so client and server cannot drift.
 """
 from datetime import datetime, timezone
 
-from .models import Campaign
+from ..models import Campaign
 
 # action -> (statuses it is legal FROM, status it moves TO, needs launch-validity?)
 TRANSITIONS: dict[str, tuple[set[str], str, bool]] = {
