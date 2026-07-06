@@ -31,7 +31,9 @@ export default function CampaignDetail() {
 
   const load = () => {
     setError(null);
-    api.getCampaign(id).then(setCampaign).catch(e => setError(e.message));
+    api.getCampaign(id)
+      .then(c => { setCampaign(c); setActionBanner(null); })
+      .catch(e => setError(e.message));
   };
 
   useEffect(load, [id]);
@@ -46,10 +48,11 @@ export default function CampaignDetail() {
     } catch (err) {
       if (err.code === 'version_conflict') {
         setActionBanner('This campaign changed elsewhere — reloading…');
+        setTimeout(load, 2000);
       } else {
         setActionBanner(err.message || 'Transition failed.');
+        load();
       }
-      load();
     } finally {
       setTransitioning(false);
     }
