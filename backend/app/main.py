@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import admin  # public added in Task 6
+from .routers import admin, public
 
 app = FastAPI(title="LoopLink")
 
@@ -16,6 +16,7 @@ app.add_middleware(
 # No create_all here: one source of truth for the schema.
 
 app.include_router(admin.router)
+app.include_router(public.router)
 
 
 @app.get("/api/health")
