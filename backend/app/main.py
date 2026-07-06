@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .routers import admin  # public added in Task 6
+
 app = FastAPI(title="LoopLink")
 
 app.add_middleware(
@@ -12,6 +14,8 @@ app.add_middleware(
 
 # Schema is owned by Alembic — run `alembic upgrade head` before starting.
 # No create_all here: one source of truth for the schema.
+
+app.include_router(admin.router)
 
 
 @app.get("/api/health")
