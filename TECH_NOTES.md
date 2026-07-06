@@ -9,12 +9,11 @@ the interesting flows, AI usage, Known limitations and Future improvements.
 
 ### 1. Validation — server is authoritative
 
-Pydantic discriminated unions validate offer shapes on every write; lifecycle
-checks enforce transition legality. The client repeats only cheap UX checks (
-name non-empty, end-after-start) so the form feels responsive, but every server
-409/422 is surfaced inline — the field error or banner text comes verbatim from
-the server. If client and server ever drift, the user sees an explicit error
-message rather than a silently accepted bad write.
+All validation lives on the server, offer shapes via Pydantic, transition
+rules via lifecycle checks. The client only does cheap UX checks (name
+required, end after start) to keep the form responsive. Every server error
+(409/422) is shown inline exactly as received. If client and server ever
+disagree, the user sees a clear error, never a silently bad write.
 
 ### 2. Lifecycle in code — one source of truth
 
@@ -23,7 +22,7 @@ statuses it's legal from, the status it moves to, and whether it requires the
 campaign to be launch-valid. `allowed_actions(campaign)` and
 `launch_problems(campaign)` are called server-side and returned on every admin
 response. The UI renders action buttons purely from
-`campaign.allowed_actions` — it never computes legality itself. Client and
+`campaign.allowed_actions`, it never computes legality itself. Client and
 server cannot drift because the client's rendering input is the server's
 enforcement output.
 
@@ -34,16 +33,16 @@ read. If the DB row has moved on (another tab, another user), the check fails
 with `409 version_conflict`. The form and detail page catch that code
 explicitly and prompt a reload with a clear message. A draft that was launched
 while the form was open trips a separate `409 status_conflict` (draft-only edit
-rule) — either way the write is rejected with a human reason, never silently
+rule), either way the write is rejected with a human reason, never silently
 merged or lost.
 
 ### 4. Link / QR encoding
 
 The QR link encodes only a random `public_token` (12 characters). We are not
-using DB UUID, status or expiry.
-Links are permanent identifiers, the campaign's status controls access.
-The public endpoint collapses `draft` and `scheduled` into a single `not_open`
-state (shoppers never see internal lifecycle detail), returns `ended`.
+using DB UUID, status or expiry. Links are permanent identifiers, the
+campaign's status controls access. The public endpoint collapses `draft` and
+`scheduled` into a single `not_open` state (shoppers never see internal
+lifecycle detail), returns `ended`.
 
 ### 5. Identity without auth
 
@@ -100,13 +99,11 @@ code help
 ## Known limitations
 
 - Phone validation is length-sanity only (7–15 digits), not E.164
-- Auto-transitions run every 5s in-process — dies if the server restarts
-  mid-window
 - No soft delete / archive, the ended campaigns accumulate forever
 - No pagination on campaign list
 - `applies_to` on offers is free text, no catalog validation or enforcement
 - No rate limiting on the public enroll endpoint
-- Migrations must be run manually — no CI enforcement
+- Migrations must be run manually, no CI pipeline
 - All datetimes shown as UTC with no conversion
 
 ## Future Improvements
