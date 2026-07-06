@@ -93,6 +93,23 @@ Same URLs apply. Hot-reload works for both services via volume mounts.
 
 ---
 
+## Running tests
+
+Tests are unit tests — no database required.
+
+```bash
+cd backend
+
+# uv
+uv run pytest tests/ -v
+
+# plain venv
+source .venv/bin/activate
+pytest tests/ -v
+```
+
+---
+
 ## Try both surfaces
 
 1. Open `http://localhost:5173/admin` — the campaign list is empty.
