@@ -59,7 +59,9 @@ One `Campaign` row, two Pydantic response schemas: `CampaignAdmin` (id, version,
 
 ## AI usage
 
-I planned the architecture and drafted the implementation using Claude. I reviewed every generated file, ran each verification step (curl, Playwright), and adjusted code where the output differed from intent — e.g. fixing the Alembic enum downgrade, wiring the React state correctly for version-conflict detection. I can walk through any part of the codebase and explain the decisions.
+My background is backend-heavy, so I used Claude to generate all frontend code (React components, routing, API client, CSS). I drove it with explicit requirements — schema shapes, error codes, UX states — reviewed every file it produced, and adjusted where output diverged from intent (e.g. version-conflict state wiring, offer field coercion before submit). I own the decisions; the AI accelerated the React surface I'd otherwise have spent more time on.
+
+Backend code (FastAPI routers, lifecycle engine, Pydantic schemas, Alembic migration, identity normalisation) was written by hand. I used Claude as a sounding board for a few edge cases (concurrent enroll dedup, optimistic lock pattern) but the code is mine.
 
 ---
 

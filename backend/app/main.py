@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import admin, public
+from .routers.campaign import admin_router, public_router
 from .scheduler import tick
 
 
@@ -29,8 +29,8 @@ app.add_middleware(
 # Schema is owned by Alembic — run `alembic upgrade head` before starting.
 # No create_all here: one source of truth for the schema.
 
-app.include_router(admin.router)
-app.include_router(public.router)
+app.include_router(admin_router)
+app.include_router(public_router)
 
 
 @app.get("/api/health")

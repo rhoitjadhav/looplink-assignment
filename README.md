@@ -5,30 +5,66 @@ A two-sided campaign tool: internal staff build and launch campaigns via a web U
 ## Prerequisites
 
 - Docker (with Compose v2) — for the Postgres database
-- Python 3.11+
+- Python 3.12+ (3.14 recommended; project uses `uv`)
 - Node 18+
 
-## Run it
+---
 
-### Database
+## Local dev setup
+
+### 1. Database
+
+Start Postgres in Docker (port **5433** on the host):
 
 ```bash
 docker compose up -d db
 ```
 
-### Backend
+Default connection string (already baked into the backend):
+```
+postgresql+psycopg2://looplink:looplink@localhost:5433/looplink
+```
+
+Override via env var if needed:
+```bash
+export DATABASE_URL="postgresql+psycopg2://looplink:looplink@localhost:5433/looplink"
+```
+
+---
+
+### 2. Backend
+
+#### Option A — `uv` (recommended)
 
 ```bash
 cd backend
+uv sync                         # creates .venv and installs all deps
+uv run alembic upgrade head     # run migrations (required before first start)
+uv run uvicorn app.main:app --reload
+```
+
+#### Option B — plain `pip`
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-alembic upgrade head        # must run before first start, and after any new migration
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-API available at `http://localhost:8000`
-Interactive docs at `http://localhost:8000/docs`
+| URL | Purpose |
+|-----|---------|
+| `http://localhost:8000` | REST API |
+| `http://localhost:8000/docs` | Interactive Swagger UI |
+| `http://localhost:8000/redoc` | ReDoc |
 
-### Frontend
+> **After pulling new migrations** always re-run `alembic upgrade head` before restarting the server.
+
+---
+
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -36,7 +72,24 @@ npm install
 npm run dev
 ```
 
-Builder UI at `http://localhost:5173/admin`
+| URL | Purpose |
+|-----|---------|
+| `http://localhost:5173/admin` | Admin / campaign builder UI |
+| `http://localhost:5173/c/<token>` | Public shopper page |
+
+The Vite dev server proxies nothing — it talks directly to `http://localhost:8000`. Make sure the backend is running first.
+
+---
+
+### 4. Full stack via Docker Compose (alternative)
+
+Runs DB + backend + frontend together:
+
+```bash
+docker compose up
+```
+
+Same URLs apply. Hot-reload works for both services via volume mounts.
 
 ---
 
