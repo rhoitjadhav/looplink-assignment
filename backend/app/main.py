@@ -1,9 +1,23 @@
+from contextlib import asynccontextmanager
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import admin, public
+from .scheduler import tick
 
-app = FastAPI(title="LoopLink")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(tick, "interval", seconds=5)
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="LoopLink", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
